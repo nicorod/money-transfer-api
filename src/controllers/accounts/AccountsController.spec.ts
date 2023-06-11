@@ -1,14 +1,174 @@
-import { PlatformTest } from "@tsed/common";
-import { AccountsController } from "./AccountsController";
+import { AccountsController } from './AccountsController';
+import { AccountsRepository } from '../../repositories/accounts';
+import { NotFound } from '@tsed/exceptions';
+import { Account, AccountType } from '../../dto/Account';
+import { UsersRepository } from '../../repositories/users';
 
-describe("UsersController", () => {
-  beforeEach(PlatformTest.create);
-  afterEach(PlatformTest.reset);
+describe('AccountsController', () => {
+  let mockAccountsRepository: Partial<AccountsRepository>;
+  let mockUsersRepository: Partial<UsersRepository>;
+  let accountsController: AccountsController;
 
-  it("should do something", () => {
-    const instance = PlatformTest.get<AccountsController>(AccountsController);
-    // const instance = PlatformTest.invoke<UsersController>(UsersController); // get fresh instance
+  beforeEach(() => {
+    mockAccountsRepository = {
+      getAccounts: jest.fn(),
+      getAccount: jest.fn(),
+      saveAccount: jest.fn(),
+      closeAccount: jest.fn(),
+      modifyAccount: jest.fn(),
+    };
 
-    expect(instance).toBeInstanceOf(AccountsController);
+    mockUsersRepository = {
+      getUser: jest.fn(),
+    };
+
+    accountsController = new AccountsController(mockAccountsRepository as AccountsRepository, mockUsersRepository as UsersRepository);
   });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('get', () => {
+    it('should return the accounts for a user', async () => {
+      const userId = 1;
+      const mockAccounts: Account[] = [
+        { id: 1, accountType: AccountType.SAVINGS, balance: 1000, userId: 1, isActive:true },
+        { id: 2, accountType: AccountType.CURRENT, balance: 500, userId: 1, isActive:true },
+      ];
+      (mockAccountsRepository.getAccounts as jest.Mock).mockResolvedValueOnce(mockAccounts);
+
+      const result = await accountsController.get(userId);
+
+      expect(result).toEqual(mockAccounts);
+      expect(mockAccountsRepository.getAccounts).toHaveBeenCalledWith(userId);
+    });
+  });
+
+  describe('put', () => {
+    it('should update an existing account', async () => {
+      const accountId = 1;
+      const updatedAccount: Account = { id: 1, accountType: AccountType.CURRENT, balance: 500, userId: 1, isActive:true };
+      const existingAccount: Account = { id: 1, accountType: AccountType.SAVINGS, balance: 1000, userId: 1, isActive:true };
+      (mockAccountsRepository.getAccount as jest.Mock).mockResolvedValueOnce(existingAccount);
+      (mockAccountsRepository.saveAccount as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await expect(accountsController.put(accountId, updatedAccount)).resolves.toBeUndefined();
+
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(existingAccount.accountType).toBe(updatedAccount.accountType);
+      expect(mockAccountsRepository.saveAccount).toHaveBeenCalledWith(existingAccount);
+    });
+
+    it('should throw NotFound error for non-existing account', async () => {
+      const accountId = 1;
+      const updatedAccount: Account = { id: 1, accountType: AccountType.CURRENT, balance: 500, userId: 1, isActive:true };
+      (mockAccountsRepository.getAccount as jest.Mock).mockResolvedValueOnce(null);
+
+      await expect(accountsController.put(accountId, updatedAccount)).rejects.toThrow(NotFound);
+
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockAccountsRepository.saveAccount).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete an existing account', async () => {
+      const accountId = 1;
+      const existingAccount: Account = { id: 1, accountType: AccountType.SAVINGS, balance: 1000, userId: 1, isActive:true };
+      (mockAccountsRepository.getAccount as jest.Mock).mockResolvedValueOnce(existingAccount);
+      (mockAccountsRepository.closeAccount as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await expect(accountsController.delete(accountId)).resolves.toBeUndefined();
+
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockAccountsRepository.closeAccount).toHaveBeenCalledWith(existingAccount.id!);
+    });
+
+    it('should throw NotFound error for non-existing account', async () => {
+      const accountId = 1;
+      (mockAccountsRepository.getAccount as jest.Mock).mockResolvedValueOnce(null);
+
+      await expect(accountsController.delete(accountId)).rejects.toThrow(NotFound);
+
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockAccountsRepository.closeAccount).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('post', () => {
+    it('should save a new account', async () => {
+      const newAccount: Account = { id: 1, accountType: AccountType.SAVINGS, balance: 1000, userId: 1, isActive:true };
+      (mockAccountsRepository.saveAccount as jest.Mock).mockResolvedValueOnce(undefined);
+      (mockUsersRepository.getUser as jest.Mock).mockResolvedValueOnce({});
+
+
+      await expect(accountsController.post(newAccount)).resolves.toBeUndefined();
+
+      expect(mockAccountsRepository.saveAccount).toHaveBeenCalledWith(newAccount);
+    });
+
+    it('save a new account should reject if user doesnt exist', async () => {
+      const newAccount: Account = { id: 1, accountType: AccountType.SAVINGS, balance: 1000, userId: 1, isActive:true };
+      (mockAccountsRepository.saveAccount as jest.Mock).mockResolvedValueOnce(undefined);
+      (mockUsersRepository.getUser as jest.Mock).mockResolvedValueOnce(undefined);
+
+
+      await expect(accountsController.post(newAccount)).rejects.toThrowError("User not found");
+
+      expect(mockAccountsRepository.saveAccount).not.toHaveBeenCalledWith(newAccount);
+    });
+  });
+
+  describe("calculateInterest", () => {
+    it("should calculate and add interest to a BasicSavings account", async () => {
+      const accountId = 1;
+      const existingAccount: Account = {
+        id: accountId,
+        accountType: AccountType.BASIC_SAVINGS,
+        balance: 1000,
+        userId: 1,
+        isActive: true,
+      };
+  
+      jest.spyOn(mockAccountsRepository, "getAccount").mockResolvedValueOnce(existingAccount);
+      jest.spyOn(mockAccountsRepository, "saveAccount").mockResolvedValueOnce();
+  
+      await expect(accountsController.calculateInterest(accountId)).resolves.toBeUndefined();
+  
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockAccountsRepository.modifyAccount).toHaveBeenCalledWith(existingAccount);
+      expect(existingAccount.balance).toBeCloseTo(1000 + (1000 * 0.05) / 12, 2); // Assuming monthly interest calculation
+    });
+  
+    it("should throw an error for non-BasicSavings accounts", async () => {
+      const accountId = 1;
+      const existingAccount: Account = {
+        id: accountId,
+        accountType: AccountType.CURRENT,
+        balance: 1000,
+        userId: 1,
+        isActive: true,
+      };
+  
+      jest.spyOn(mockAccountsRepository, "getAccount").mockResolvedValueOnce(existingAccount);
+  
+      await expect(accountsController.calculateInterest(accountId)).rejects.toThrowError("Interest calculation is only applicable to BasicSavings accounts");
+  
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockAccountsRepository.saveAccount).not.toHaveBeenCalled();
+    });
+  
+    it("should throw an error for non-existent accounts", async () => {
+      const accountId = 1;
+  
+      jest.spyOn(mockAccountsRepository, "getAccount").mockResolvedValueOnce(undefined);
+  
+      await expect(accountsController.calculateInterest(accountId)).rejects.toThrowError("Account not found");
+  
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockAccountsRepository.saveAccount).not.toHaveBeenCalled();
+    });
+  });
+  
 });

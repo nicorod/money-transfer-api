@@ -6,8 +6,8 @@ import "@tsed/ajv";
 import "@tsed/swagger";
 import {config} from "./config/index";
 import * as accounts from "./controllers/accounts/index";
+import * as transactions from "./controllers/transactions/index";
 import * as users from "./controllers/users/index";
-import * as pages from "./controllers/pages/index";
 import { Pool } from "pg";
 
 @Configuration({
@@ -23,8 +23,8 @@ import { Pool } from "pg";
     "/accounts": [
       ...Object.values(accounts)
     ],
-    "/": [
-      ...Object.values(pages)
+    "/transactions": [
+      ...Object.values(transactions)
     ]
   },
   swagger: [
@@ -69,8 +69,11 @@ export class Server {
   protected settings: Configuration;
 
   $beforeRoutesInit(): void {
-    this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+    this._pool = new Pool({
+      user: "nicolasrodriguez1",
+      database: "nicolasrodriguez",
+      host: "localhost",
+      port: 5432,
     });
   }
 }

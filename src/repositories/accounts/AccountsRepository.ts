@@ -1,7 +1,6 @@
 import { Inject, Service } from "@tsed/di";
 import { Pool, QueryResult } from 'pg';
-import { Account } from "src/dto/Account";
-import { User, UserRole } from "src/dto/User";
+import { Account, AccountType } from "../../dto/Account";
 
 @Service()
 export class AccountsRepository {
@@ -12,59 +11,75 @@ export class AccountsRepository {
     this.pool = pool;
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAccounts(userId: number): Promise<Account[]> {
+    
     const client = await this.pool.connect();
 
     try {
-      const result: QueryResult = await client.query('SELECT * FROM users');
+      const result: QueryResult = await client.query('SELECT * FROM accounts WHERE "userId" = $1 AND "isActive" = true', [userId]);
 
-      return this._parseUsersFromQueryResult(result)
+      return this._parseAccountsFromQueryResult(result)
     } finally {
       client.release();
     }
   }
 
-  async getUser(userId: number): Promise<User> {
+  async getAccount(accountId: number): Promise<Account | undefined> {
     const client = await this.pool.connect();
 
     try {
-      const result: QueryResult = await client.query('SELECT * FROM users where id = $1', [userId]);
+      const result: QueryResult = await client.query('SELECT * FROM accounts WHERE id = $1 AND "isActive" = true', [accountId]);
 
-      return this._parseUsersFromQueryResult(result)[0]
+      const accounts = this._parseAccountsFromQueryResult(result);
+      return accounts? accounts[0] : undefined;
     } finally {
       client.release();
     }
   }
 
-  async saveUser(user: User): Promise<void> {
+  async saveAccount(account: Account): Promise<void> {
     const client = await this.pool.connect();
 
     try {
-      await client.query('INSERT INTO users (id, name, role) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role;', [user.id, user.name, user.role]);
+      await client.query('INSERT INTO accounts (balance, type, "userId") VALUES ($1, $2, $3)', [account.balance, account.accountType, account.userId]);
 
     } finally {
       client.release();
     }
   }
 
-  async deleteUser(userId: number): Promise<void> {
+  async modifyAccount(account: Account): Promise<void> {
     const client = await this.pool.connect();
 
     try {
-      await client.query('DELETE FROM users where id = $1', [userId]);
+      await client.query('UPDATE accounts SET balance = $1, type = $2 WHERE id = $3', [account.balance, account.accountType, account.userId]);
+
     } finally {
       client.release();
     }
   }
 
-  _parseUsersFromQueryResult(queryResult: QueryResult): User[] {
+  async closeAccount(accountId: number): Promise<void> {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('UPDATE accounts SET "isActive" = false WHERE id = $1', [accountId]);
+    } finally {
+      client.release();
+    }
+  }
+
+  _parseAccountsFromQueryResult(queryResult: QueryResult): Account[] {
+
     return queryResult.rows.map((row) => {
-      const { id, name, role } = row;
+      const { id, accountType , balance, userId, isActive } = row;
   
       return {
         id,
-        name,
-        role: role as UserRole,
+        accountType: accountType as AccountType,
+        balance,
+        userId, 
+        isActive
       };
     });
   }

@@ -1,6 +1,5 @@
 import { Inject, Service } from "@tsed/di";
 import { Pool, QueryResult } from 'pg';
-import { Account } from "src/dto/Account";
 import { User, UserRole } from "src/dto/User";
 
 @Service()
@@ -40,7 +39,18 @@ export class UsersRepository {
     const client = await this.pool.connect();
 
     try {
-      await client.query('INSERT INTO users (id, name, role) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role;', [user.id, user.name, user.role]);
+      await client.query('INSERT INTO users (name, role) VALUES ($1, $2);', [user.name, user.role]);
+
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateUser(userId: number, user: User): Promise<void> {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('UPDATE users SET name = $2, role = $3 WHERE id = $1;', [userId, user.name, user.role]);
 
     } finally {
       client.release();

@@ -37,7 +37,7 @@ export class UsersController {
     existingUser.name = updatedUser.name;
     existingUser.role = updatedUser.role;
 
-    return await this.usersRepository.saveUser(existingUser);
+    return await this.usersRepository.updateUser(userId, existingUser);
   }
 
 

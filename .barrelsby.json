@@ -1,0 +1,14 @@
+{
+    "directory": [
+      "./src/controllers/accounts",
+      "./src/controllers/transactions",
+      "./src/controllers/users"
+    ],
+    "exclude": [
+      "__mock__",
+      "__mocks__",
+      ".spec.ts"
+    ],
+    "delete": true
+  }
+  

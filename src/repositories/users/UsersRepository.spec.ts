@@ -93,8 +93,8 @@ describe('UserRepository', () => {
   
       expect(mockPool.connect).toHaveBeenCalledTimes(1);
       expect(mockPool.query).toHaveBeenCalledWith(
-        'INSERT INTO users (id, name, role) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role;',
-        [user.id, user.name, user.role]);
+        'INSERT INTO users (name, role) VALUES ($1, $2);',
+        [user.name, user.role]);
     });
 
     it('should delete the user with id passed in params', async () => {
@@ -106,6 +106,18 @@ describe('UserRepository', () => {
 
       expect(mockPool.connect).toHaveBeenCalledTimes(1);
       expect(mockPool.query).toHaveBeenCalledWith('DELETE FROM users where id = $1', [1]);
+    });
+
+    it('should update the user with id passed in params', async () => {
+      
+      (mockPool as any).connect = jest.fn().mockReturnThis();
+      (mockPool as any).query = jest.fn().mockReturnThis();
+      const userUpdated = { id: 1, name: 'John Doe', role: UserRole.ADMIN };
+
+      const user = await userRepository.updateUser(1, userUpdated);
+
+      expect(mockPool.connect).toHaveBeenCalledTimes(1);
+      expect(mockPool.query).toHaveBeenCalledWith('UPDATE users SET name = $2, role = $3 WHERE id = $1;', [1, userUpdated.name, userUpdated.role]);
     });
   });
 

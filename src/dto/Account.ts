@@ -10,7 +10,8 @@ interface Account {
     id: number;
     accountType: AccountType;
     balance: number;
-    user: User
+    userId: number;
+    isActive: boolean;
 }
 
 export { Account, AccountType };

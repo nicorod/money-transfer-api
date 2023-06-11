@@ -42,19 +42,50 @@ describe('TransactionsRepository', () => {
   });
 
   describe('saveTransaction', () => {
-    it('should save a new transaction', async () => {
-      (mockPool as any).connect = jest.fn().mockReturnThis();
-      (mockPool as any).query = jest.fn().mockReturnThis();
+    it("should save a new transaction and commit the changes", async () => {
+      const transaction = { fromAccountId: 1, toAccountId: 2, amount: 100 };
+      const newBalance = 400;
+      const newBalance2 = 500;
+      const mockClient = {
+        query: jest.fn(),
+        release: jest.fn(),
+      };
 
-      await expect(
-        transactionsRepository.saveTransaction({ fromAccountId: 1, toAccountId: 2, amount: 100 })
-      ).resolves.toBeUndefined();
+      // Mock the pool's `connect` method to return the mock client
+      (mockPool.connect as jest.Mock).mockResolvedValueOnce(mockClient);
 
-      expect(mockPool.connect).toHaveBeenCalledTimes(1);
-      expect(mockPool.query).toHaveBeenCalledWith(
-        'INSERT INTO users (fromAccountId, toAccountId, amount) VALUES ($1, $2, $3)',
-        [1, 2, 100]
-      );
+      await transactionsRepository.saveTransaction(transaction, newBalance, newBalance2);
+
+      expect(mockPool.connect).toHaveBeenCalled();
+      expect(mockClient.query).toHaveBeenNthCalledWith(1, "BEGIN");
+      expect(mockClient.query).toHaveBeenNthCalledWith(2, "INSERT INTO Transactions (\"fromAccountId\", \"toAccountId\", amount) VALUES ($1, $2, $3);", [transaction.fromAccountId, transaction.toAccountId, transaction.amount]);
+      expect(mockClient.query).toHaveBeenNthCalledWith(3, "UPDATE accounts SET balance = $2 WHERE id = $1;", [transaction.fromAccountId, newBalance]);
+      expect(mockClient.query).toHaveBeenNthCalledWith(4, "UPDATE accounts SET balance = $2 WHERE id = $1;", [transaction.toAccountId, newBalance2]);
+      expect(mockClient.query).toHaveBeenNthCalledWith(5, "COMMIT");
+      expect(mockClient.release).toHaveBeenCalled();
+    });
+
+    it("should rollback the changes if an error occurs", async () => {
+      const transaction = { fromAccountId: 1, toAccountId: 2, amount: 100 };
+      const newBalance = 400;
+      const newBalance2 = 500;
+      const mockClient = {
+        query: jest.fn(),
+        release: jest.fn(),
+      };
+
+      // Mock the pool's `connect` method to return the mock client
+      (mockPool.connect as jest.Mock).mockResolvedValueOnce(mockClient);
+
+      // Mock an error in the query
+      (mockClient.query as jest.Mock).mockRejectedValueOnce(new Error("Query error"));
+
+      await expect(transactionsRepository.saveTransaction(transaction, newBalance, newBalance2)).rejects.toThrow(Error);
+
+      expect(mockPool.connect).toHaveBeenCalled();
+      expect(mockClient.query).toHaveBeenNthCalledWith(1, "BEGIN");
+      expect(mockClient.query).toHaveBeenNthCalledWith(2, "ROLLBACK");
+      expect(mockClient.release).toHaveBeenCalled();
     });
   });
 });
