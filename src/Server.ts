@@ -5,8 +5,10 @@ import "@tsed/platform-express"; // /!\ keep this import
 import "@tsed/ajv";
 import "@tsed/swagger";
 import {config} from "./config/index";
-import * as rest from "./controllers/rest/index";
+import * as accounts from "./controllers/accounts/index";
+import * as users from "./controllers/users/index";
 import * as pages from "./controllers/pages/index";
+import { Pool } from "pg";
 
 @Configuration({
   ...config,
@@ -15,8 +17,11 @@ import * as pages from "./controllers/pages/index";
   httpsPort: false, // CHANGE
   disableComponentsScan: true,
   mount: {
-    "/rest": [
-      ...Object.values(rest)
+    "/users": [
+      ...Object.values(users)
+    ],
+    "/accounts": [
+      ...Object.values(accounts)
     ],
     "/": [
       ...Object.values(pages)
@@ -50,6 +55,22 @@ export class Server {
   @Inject()
   protected app: PlatformApplication;
 
+  private _pool: Pool;
+
+  get pool() {
+    return this._pool;
+  }
+
+  set pool(value: Pool) {
+    this._pool = value;
+  }
+
   @Configuration()
   protected settings: Configuration;
+
+  $beforeRoutesInit(): void {
+    this.pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
+  }
 }
