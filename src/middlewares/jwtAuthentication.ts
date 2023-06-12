@@ -22,8 +22,6 @@ export class CustomAuthMiddleware implements MiddlewareMethods {
 
       request.user = decoded;
 
-      console.log("USER", decoded)
-
       next();
     } catch (err) {
       throw new Unauthorized('Unauthorized');

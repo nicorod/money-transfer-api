@@ -4,6 +4,7 @@ interface Transaction {
     fromAccountId: number;
     toAccountId: number;
     amount: number;
+    time?: BigInt;
 };
 
 export { Transaction };

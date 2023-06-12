@@ -115,7 +115,7 @@ Accounts:
   "id": 1,
   "accountType": "SAVINGS",
   "balance": 100,
-  "userId": 1,
+  "userId": 1
 }
 ```
 ```json
@@ -123,7 +123,7 @@ Accounts:
   "id": 2,
   "accountType": "CURRENT",
   "balance": 1000,
-  "userId": 2,
+  "userId": 2
 }
 ```
 ```json
@@ -131,7 +131,7 @@ Accounts:
   "id": 3,
   "accountType": "BASIC_SAVINGS",
   "balance": 1000,
-  "userId": 2,
+  "userId": 2
 }
 ```
 
@@ -141,7 +141,7 @@ Transactions:
   "id": 1,
   "fromAccountId": 1,
   "toAccountId": 2,
-  "amount": 10,
+  "amount": 10
 }
 ```
 ```json
@@ -149,7 +149,7 @@ Transactions:
   "id": 2,
   "fromAccountId": 2,
   "toAccountId": 1,
-  "amount": 10,
+  "amount": 10
 }
 ```
 

@@ -146,7 +146,7 @@ describe('TransactionsController', () => {
       const accountId = 1;
       const newTransaction: Transaction = { fromAccountId: 1, toAccountId: 3, amount: 11000 };
       const fromAccount: Account = { id: 1, balance: 500000, accountType: AccountType.BASIC_SAVINGS, isActive: true, userId: 1 };
-      const toAccount: Account = { id: 1, balance: 40000, accountType: AccountType.BASIC_SAVINGS, isActive: true, userId: 1 };
+      const toAccount: Account = { id: 2, balance: 40000, accountType: AccountType.BASIC_SAVINGS, isActive: true, userId: 1 };
 
       (mockAccountsRepository.getAccounts as jest.Mock).mockResolvedValueOnce([toAccount]);
       (mockAccountsRepository.getAccount as jest.Mock).mockResolvedValueOnce(toAccount).mockResolvedValue(fromAccount);

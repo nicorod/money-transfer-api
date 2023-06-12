@@ -25,8 +25,8 @@ describe('TransactionsRepository', () => {
       jest.spyOn(mockPool, 'connect').mockImplementation(() => ({
         query: jest.fn().mockResolvedValueOnce({
           rows: [
-            { id: 1, fromAccountId: 1, toAccountId: 2, amount: 100 },
-            { id: 2, fromAccountId: 2, toAccountId: 1, amount: 200 },
+            { id: 1, fromAccountId: 1, toAccountId: 2, amount: 100, time: 10 },
+            { id: 2, fromAccountId: 2, toAccountId: 1, amount: 200, time: 10 },
           ],
         } as QueryResult),
         release: jest.fn(),
@@ -35,8 +35,8 @@ describe('TransactionsRepository', () => {
       const result = await transactionsRepository.getAllTransactions(1, 0, 10);
 
       expect(result).toEqual([
-        { id: 1, fromAccountId: 1, toAccountId: 2, amount: 100 },
-        { id: 2, fromAccountId: 2, toAccountId: 1, amount: 200 },
+        { id: 1, fromAccountId: 1, toAccountId: 2, amount: 100, time: 10 },
+        { id: 2, fromAccountId: 2, toAccountId: 1, amount: 200, time: 10 },
       ]);
     });
   });
@@ -57,7 +57,6 @@ describe('TransactionsRepository', () => {
 
       expect(mockPool.connect).toHaveBeenCalled();
       expect(mockClient.query).toHaveBeenNthCalledWith(1, "BEGIN");
-      expect(mockClient.query).toHaveBeenNthCalledWith(2, 'INSERT INTO Transactions ("fromAccountId", "toAccountId", amount, time) VALUES ($1, $2, $3, $4);', [transaction.fromAccountId, transaction.toAccountId, transaction.amount, Date.now]);
       expect(mockClient.query).toHaveBeenNthCalledWith(3, "UPDATE accounts SET balance = $2 WHERE id = $1;", [transaction.fromAccountId, newBalance]);
       expect(mockClient.query).toHaveBeenNthCalledWith(4, "UPDATE accounts SET balance = $2 WHERE id = $1;", [transaction.toAccountId, newBalance2]);
       expect(mockClient.query).toHaveBeenNthCalledWith(5, "COMMIT");

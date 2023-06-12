@@ -40,7 +40,9 @@ export class TransactionsController {
     if (!toAccount)
       throw Error("Destination account not found")
 
-    if (userAccounts.includes(toAccount))
+    const isToAccountInUserAccounts = userAccounts.find((account)=> account.id === toAccount.id)
+
+    if (isToAccountInUserAccounts)
       throw Error("Invalid transaction: Transfer between accounts belonging to the same user is not allowed")
 
     if (newTransaction.amount > fromAccount!.balance)

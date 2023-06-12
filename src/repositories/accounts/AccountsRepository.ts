@@ -72,11 +72,11 @@ export class AccountsRepository {
   _parseAccountsFromQueryResult(queryResult: QueryResult): Account[] {
 
     return queryResult.rows.map((row) => {
-      const { id, accountType , balance, userId, isActive } = row;
+      const { id, type , balance, userId, isActive } = row;
   
       return {
         id,
-        accountType: accountType as AccountType,
+        accountType: type as AccountType,
         balance,
         userId, 
         isActive

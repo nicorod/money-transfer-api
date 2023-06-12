@@ -80,7 +80,7 @@ export class AccountsController {
 
     const interestRate = 0.05;
     const monthlyInterest = (existingAccount.balance * interestRate) / 12;
-    existingAccount.balance += monthlyInterest;
+    existingAccount.balance += parseInt(monthlyInterest.toString()) ;
 
     await this.accountsRepository.modifyAccount(existingAccount);
   }

@@ -35,7 +35,7 @@ export class TransactionsRepository {
 
     try {
       await client.query('BEGIN');
-      await client.query('INSERT INTO Transactions ("fromAccountId", "toAccountId", amount, time) VALUES ($1, $2, $3, $4);', [transaction.fromAccountId, transaction.toAccountId, transaction.amount, Date.now]);
+      await client.query('INSERT INTO Transactions ("fromAccountId", "toAccountId", amount, time) VALUES ($1, $2, $3, $4);', [transaction.fromAccountId, transaction.toAccountId, transaction.amount, Date.now()]);
       await client.query('UPDATE accounts SET balance = $2 WHERE id = $1;', [transaction.fromAccountId, fromAccountNewBalance]);
       await client.query('UPDATE accounts SET balance = $2 WHERE id = $1;', [transaction.toAccountId, toAccountNewBalance]);
       await client.query('COMMIT');
@@ -50,10 +50,10 @@ export class TransactionsRepository {
 
   _parseTransactionsFromQueryResult(queryResult: QueryResult): Transaction[] {
     return queryResult.rows.map((row) => {
-      const { id, fromAccountId, toAccountId, amount } = row;
+      const { id, fromAccountId, toAccountId, amount, time } = row;
 
       return {
-        id, fromAccountId, toAccountId, amount
+        id, fromAccountId, toAccountId, amount, time
       };
     });
   }
