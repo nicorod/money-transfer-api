@@ -128,6 +128,17 @@ describe('AccountsController', () => {
 
       expect(mockAccountsRepository.saveAccount).not.toHaveBeenCalledWith(newAccount);
     });
+
+    it('save a new account should reject if account is basic savings and balance exceed 50000', async () => {
+      const newAccount: Account = { id: 1, accountType: AccountType.BASIC_SAVINGS, balance: 60000, userId: 1, isActive:true };
+      (mockAccountsRepository.saveAccount as jest.Mock).mockResolvedValueOnce(undefined);
+      (mockUsersRepository.getUser as jest.Mock).mockResolvedValueOnce(undefined);
+
+
+      await expect(accountsController.post(newAccount)).rejects.toThrowError("Basic savings account balance must not exceed Re. 50000");
+
+      expect(mockAccountsRepository.saveAccount).not.toHaveBeenCalledWith(newAccount);
+    });
   });
 
   describe("calculateInterest", () => {

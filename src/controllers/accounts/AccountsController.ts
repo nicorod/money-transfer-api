@@ -56,6 +56,9 @@ export class AccountsController {
   async post(@BodyParams() newAccount: Account) {
     const existingUser = await this.usersRepository.getUser(newAccount.userId);
 
+    if(newAccount.accountType === AccountType.BASIC_SAVINGS && newAccount.balance > 50000)
+      throw Error("Basic savings account balance must not exceed Re. 50000")
+
     if (!existingUser) {
       throw new NotFound('User not found');
     }

@@ -23,9 +23,20 @@
 
 > **Important!** Ts.ED requires Node >= 14, Express >= 4 and TypeScript >= 4.
 
+
+
 ```batch
+
+This API uses a local Postgresql database, for simplifications in implementation AUTHENTICATION IS IMPLEMENTED IN CODE, BUT NOT ASKED IN ENDPOINTS (code commented) also connection string must use default user and database.
+This connection string is changed in .env file.
+Example with default user nicolasrodriguez
+DATABASE_URL="postgresql://nicolasrodriguez:123456789@localhost:5432/nicolasrodriguez?schema=public"
+
 # install dependencies
 $ yarn install
+
+# install migrations
+$ yarn run prisma:migrate 
 
 # serve
 $ yarn start
@@ -33,6 +44,15 @@ $ yarn start
 # build for production
 $ yarn build
 $ yarn start:prod
+```
+## Swagger
+
+```
+# serve
+$ yarn start
+
+# swagger doc
+http://localhost:8083/doc
 ```
 
 ## Docker
@@ -65,3 +85,71 @@ Edit `.barreslby.json` to customize it:
   "delete": true
 }
 ```
+## Use Cases
+
+Users: 
+
+```json
+{
+  "id": 1,
+  "name": "test user 1",
+  "role": "USER",
+  "email": "email@test.com",
+  "password": "123456"
+}
+```
+
+```json
+{
+  "id": 2,
+  "name": "test admin 1",
+  "role": "ADMIN",
+  "email": "email@test.com",
+  "password": "123456"
+}
+```
+
+Accounts:
+```json
+{
+  "id": 1,
+  "accountType": "SAVINGS",
+  "balance": 100,
+  "userId": 1,
+}
+```
+```json
+{
+  "id": 2,
+  "accountType": "CURRENT",
+  "balance": 1000,
+  "userId": 2,
+}
+```
+```json
+{
+  "id": 3,
+  "accountType": "BASIC_SAVINGS",
+  "balance": 1000,
+  "userId": 2,
+}
+```
+
+Transactions:
+```json
+{
+  "id": 1,
+  "fromAccountId": 1,
+  "toAccountId": 2,
+  "amount": 10,
+}
+```
+```json
+{
+  "id": 2,
+  "fromAccountId": 2,
+  "toAccountId": 1,
+  "amount": 10,
+}
+```
+
