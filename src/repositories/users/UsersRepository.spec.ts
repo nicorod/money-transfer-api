@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from 'pg';
-import { UserRole } from '../../dto/User';
+import { User, UserRole } from '../../dto/User';
 import { UsersRepository } from './UsersRepository';
 
 describe('UserRepository', () => {
@@ -24,8 +24,8 @@ describe('UserRepository', () => {
     it('should return all users from the database', async () => {
       const mockQueryResult: QueryResult = {
         rows: [
-          { id: 1, name: 'John Doe', role: 'USER' },
-          { id: 2, name: 'Jane Smith', role: 'ADMIN' },
+          { id: 1, name: 'John Doe', role: 'USER', email: "testEmail", password: "password" },
+          { id: 2, name: 'Jane Smith', role: 'ADMIN', email: "testEmail", password: "password" },
         ],
         rowCount: 2,
         command: '',
@@ -41,8 +41,8 @@ describe('UserRepository', () => {
       const users = await userRepository.getAllUsers();
 
       expect(users).toEqual([
-        { id: 1, name: 'John Doe', role: 'USER' },
-        { id: 2, name: 'Jane Smith', role: 'ADMIN' },
+        { id: 1, name: 'John Doe', role: 'USER', email: "testEmail", password: "password" },
+        { id: 2, name: 'Jane Smith', role: 'ADMIN', email: "testEmail", password: "password" },
       ]);
 
       expect(mockPool.connect).toHaveBeenCalledTimes(1);
@@ -52,8 +52,8 @@ describe('UserRepository', () => {
     it('should return the user with id passed in params', async () => {
       const mockQueryResult: QueryResult = {
         rows: [
-          { id: 1, name: 'John Doe', role: 'USER' },
-          { id: 2, name: 'Jane Smith', role: 'ADMIN' },
+          { id: 1, name: 'John Doe', role: 'USER', email: "testEmail", password: "password" },
+          { id: 2, name: 'Jane Smith', role: 'ADMIN', email: "testEmail", password: "password" },
         ],
         rowCount: 2,
         command: '',
@@ -67,7 +67,7 @@ describe('UserRepository', () => {
 
       const user = await userRepository.getUser(1);
 
-      expect(user).toEqual({ id: 1, name: 'John Doe', role: 'USER' });
+      expect(user).toEqual({ id: 1, name: 'John Doe', role: 'USER', email: "testEmail", password: "password" });
       expect(mockPool.connect).toHaveBeenCalledTimes(1);
       expect(mockPool.query).toHaveBeenCalledWith('SELECT * FROM users where id = $1', [1]);
     });
@@ -83,18 +83,31 @@ describe('UserRepository', () => {
       expect((mockPool as any).release).toHaveBeenCalledTimes(1);
     });
 
-    it('should execute the query with the correct SQL and parameters', async () => {
+    it('should save a new user and return the saved user', async () => {
+      const mockQueryResult = {
+        rows: [{ id: 1, name: 'John Doe', role: 'user', email: 'john@example.com', password: 'password' }],
+      };
       (mockPool as any).connect = jest.fn().mockReturnThis();
       (mockPool as any).query = jest.fn().mockReturnThis();
-  
-      const user = { id: 1, name: 'John Doe', role: UserRole.ADMIN };
-  
-      await userRepository.saveUser(user);
-  
-      expect(mockPool.connect).toHaveBeenCalledTimes(1);
+      (mockPool as any).query.mockResolvedValueOnce().mockResolvedValueOnce(mockQueryResult);
+
+      const user: User = {
+        name: 'John Doe',
+        role: UserRole.USER,
+        email: 'john@example.com',
+        password: 'password',
+      };
+
+      const savedUser = await userRepository.saveUser(user);
+
+      expect(mockPool.connect).toHaveBeenCalled();
       expect(mockPool.query).toHaveBeenCalledWith(
-        'INSERT INTO users (name, role) VALUES ($1, $2);',
-        [user.name, user.role]);
+        'INSERT INTO users (name, role, email, password) VALUES ($1, $2, $3, $4);',
+        [user.name, user.role, user.email, user.password]
+      );
+
+      // Expect the returned user to match the mock query result
+      expect(savedUser).toEqual(mockQueryResult.rows[0]);
     });
 
     it('should delete the user with id passed in params', async () => {
@@ -112,12 +125,12 @@ describe('UserRepository', () => {
       
       (mockPool as any).connect = jest.fn().mockReturnThis();
       (mockPool as any).query = jest.fn().mockReturnThis();
-      const userUpdated = { id: 1, name: 'John Doe', role: UserRole.ADMIN };
+      const userUpdated = { id: 1, name: 'John Doe', role: UserRole.ADMIN, email: "testEmail", password: "password" };
 
       const user = await userRepository.updateUser(1, userUpdated);
 
       expect(mockPool.connect).toHaveBeenCalledTimes(1);
-      expect(mockPool.query).toHaveBeenCalledWith('UPDATE users SET name = $2, role = $3 WHERE id = $1;', [1, userUpdated.name, userUpdated.role]);
+      expect(mockPool.query).toHaveBeenCalledWith('UPDATE users SET name = $2, role = $3, email = $4, password = $5 WHERE id = $1;', [1, userUpdated.name, userUpdated.role, userUpdated.email, userUpdated.password]);
     });
   });
 

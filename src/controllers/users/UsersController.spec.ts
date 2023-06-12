@@ -29,26 +29,26 @@ describe('UsersController', () => {
   describe('GET /users', () => {
     it('should return all users', async () => {
       jest.spyOn(usersRepository, 'getAllUsers').mockResolvedValueOnce([
-        { id: 1, name: 'John Doe', role: UserRole.USER },
-        { id: 2, name: 'Jane Smith', role: UserRole.ADMIN  },
+        { id: 1, name: 'John Doe', role: UserRole.USER, email: "testEmail", password: "password" },
+        { id: 2, name: 'Jane Smith', role: UserRole.ADMIN, email: "testEmail", password: "password"  },
       ]);
 
       const result = await usersController.getUsers();
 
       expect(result).toEqual([
-        { id: 1, name: 'John Doe', role: 'USER' },
-        { id: 2, name: 'Jane Smith', role: 'ADMIN' },
+        { id: 1, name: 'John Doe', role: 'USER', email: "testEmail", password: "password" },
+        { id: 2, name: 'Jane Smith', role: 'ADMIN', email: "testEmail", password: "password" },
       ]);
     });
   });
 
   describe('GET /users/:userId', () => {
     it('should return a user by ID', async () => {
-      jest.spyOn(usersRepository, 'getUser').mockResolvedValueOnce({ id: 1, name: 'John Doe', role: UserRole.USER });
+      jest.spyOn(usersRepository, 'getUser').mockResolvedValueOnce({ id: 1, name: 'John Doe', role: UserRole.USER, email: "testEmail", password: "password" });
 
       const result = await usersController.getUser(1);
 
-      expect(result).toEqual({ id: 1, name: 'John Doe', role: 'USER' });
+      expect(result).toEqual({ id: 1, name: 'John Doe', role: 'USER', email: "testEmail", password: "password" });
     });
 
     it('should return null for non-existent user', async () => {
@@ -63,8 +63,8 @@ describe('UsersController', () => {
   describe('PUT /users/:userId', () => {
     it('should update an existing user', async () => {
       const userId = 1;
-      const user: User = { id: userId, name: 'John Doe', role: UserRole.USER };
-      const updatedUser: User = { id: userId, name: 'John Smith', role: UserRole.ADMIN };
+      const user: User = { id: userId, name: 'John Doe', role: UserRole.USER, email: "testEmail", password: "password" };
+      const updatedUser: User = { id: userId, name: 'John Smith', role: UserRole.ADMIN, email: "testEmail", password: "password" };
 
       jest.spyOn(usersRepository, 'getUser').mockResolvedValueOnce(user);
       jest.spyOn(usersRepository, 'updateUser').mockResolvedValueOnce();
@@ -77,7 +77,7 @@ describe('UsersController', () => {
     it('should throw NotFound error for non-existent user', async () => {
       jest.spyOn(usersRepository, 'getUser').mockResolvedValueOnce(null as unknown as User);
 
-      await expect(usersController.put(1, { id: 1, name: 'John Smith', role: UserRole.ADMIN })).rejects.toThrow(NotFound);
+      await expect(usersController.put(1, { id: 1, name: 'John Smith', role: UserRole.ADMIN, email: "testEmail", password: "password" })).rejects.toThrow(NotFound);
 
       expect(usersRepository.getUser).toHaveBeenCalledWith(1);
     });
@@ -85,7 +85,7 @@ describe('UsersController', () => {
 
   describe('DELETE /users/:userId', () => {
     it('should delete an existing user', async () => {
-      jest.spyOn(usersRepository, 'getUser').mockResolvedValueOnce({ id: 1, name: 'John Doe', role: UserRole.USER });
+      jest.spyOn(usersRepository, 'getUser').mockResolvedValueOnce({ id: 1, name: 'John Doe', role: UserRole.USER, email: "testEmail", password: "password" });
       jest.spyOn(usersRepository, 'deleteUser').mockResolvedValueOnce();
 
       await expect(usersController.delete(1)).resolves.toBeUndefined();
@@ -105,11 +105,11 @@ describe('UsersController', () => {
 
   describe('POST /users', () => {
     it('should save a new user', async () => {
-      jest.spyOn(usersRepository, 'saveUser').mockResolvedValueOnce();
+      jest.spyOn(usersRepository, 'saveUser').mockResolvedValueOnce({ id: 1, name: 'John Doe', role: UserRole.USER, email: "testEmail", password: "password" });
 
-      await expect(usersController.post({ id: 1, name: 'John Doe', role: UserRole.USER })).resolves.toBeUndefined();
+      await expect(usersController.post({ id: 1, name: 'John Doe', role: UserRole.USER, email: "testEmail", password: "password" })).resolves.toBeDefined();
 
-      expect(usersRepository.saveUser).toHaveBeenCalledWith({ id: 1, name: 'John Doe', role: 'USER' });
+      expect(usersRepository.saveUser).toHaveBeenCalledWith({ id: 1, name: 'John Doe', role: 'USER', email: "testEmail", password: "password" });
     });
   });
 });

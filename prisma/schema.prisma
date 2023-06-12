@@ -36,6 +36,8 @@ enum AccountType {
 model users {
   id    Int     @default(autoincrement()) @id
   name String
+  email String
+  password String
   role Role @default(USER)
   accounts accounts[]
 }

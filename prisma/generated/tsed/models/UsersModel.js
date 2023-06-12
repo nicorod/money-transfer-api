@@ -27,6 +27,16 @@ __decorate([
     __metadata("design:type", String)
 ], UsersModel.prototype, "name", void 0);
 __decorate([
+    (0, schema_1.Property)(String),
+    (0, schema_1.Required)(),
+    __metadata("design:type", String)
+], UsersModel.prototype, "email", void 0);
+__decorate([
+    (0, schema_1.Property)(String),
+    (0, schema_1.Required)(),
+    __metadata("design:type", String)
+], UsersModel.prototype, "password", void 0);
+__decorate([
     (0, schema_1.Required)(),
     (0, schema_1.Enum)(enums_1.Role),
     __metadata("design:type", String)

@@ -1,12 +1,14 @@
-import { BodyParams, PathParams } from '@tsed/common';
+import { BodyParams, PathParams, UseBefore } from '@tsed/common';
 import {Controller} from '@tsed/di';
 import { NotFound } from '@tsed/exceptions';
 import {Delete, Get, Post, Put} from '@tsed/schema';
 import { User } from 'src/dto/User';
-
+import { sign } from 'jsonwebtoken';
 import { UsersRepository } from '../../repositories/users/UsersRepository';
+import { CustomAuth, CustomAuthMiddleware } from "../../middlewares/jwtAuthentication";
 
-@Controller('/users')
+
+@Controller('/')
 export class UsersController {
 
   private usersRepository: UsersRepository;
@@ -16,6 +18,7 @@ export class UsersController {
   }
 
   @Get('/')
+  //@CustomAuth({role: "ADMIN", scopes: ["email"]})
   async getUsers(): Promise<User[]> {
     return await this.usersRepository.getAllUsers();
   }
@@ -40,7 +43,8 @@ export class UsersController {
     return await this.usersRepository.updateUser(userId, existingUser);
   }
 
-
+  //@UseBefore(CustomAuthMiddleware)
+  //@CustomAuth({role: "ADMIN", scopes: ["email"]})
   @Delete('/:userId')
   async delete(@PathParams('userId') userId: number): Promise<void>  {
     const existingUser =  await this.usersRepository.getUser(userId);
@@ -52,8 +56,11 @@ export class UsersController {
     return await this.usersRepository.deleteUser(existingUser.id!);
   }
 
-  @Post('/')
-  async post(@BodyParams() user: User) {
-    return await this.usersRepository.saveUser(user);
+  @Post('/register')
+  async post(@BodyParams() user: User): Promise<{ token: string }>  {
+    const userCreated = await this.usersRepository.saveUser(user);
+    const token = sign({ id: userCreated.id, email: userCreated.email, role: userCreated.role }, '123456789');
+
+    return { token };
   }
 }

@@ -6,6 +6,7 @@ import { UsersRepository } from "../../repositories/users";
 import { Account, AccountStatement, AccountType } from "../../dto/Account";
 import { AccountsRepository } from "../../repositories/accounts";
 import { TransactionsRepository } from "../../repositories/transactions";
+import { CustomAuth } from "../../middlewares/jwtAuthentication";
 
 @Controller("/")
 export class AccountsController {
@@ -39,6 +40,7 @@ export class AccountsController {
     return await this.accountsRepository.saveAccount(existingAccount);
   }
 
+  //@CustomAuth({role: "ADMIN", scopes: ["email"]})
   @Delete('/:accountId')
   async delete(@PathParams('accountId') accountId: number): Promise<void> {
     const existingAccount = await this.accountsRepository.getAccount(accountId);

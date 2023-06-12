@@ -35,12 +35,13 @@ export class UsersRepository {
     }
   }
 
-  async saveUser(user: User): Promise<void> {
+  async saveUser(user: User): Promise<User> {
     const client = await this.pool.connect();
 
     try {
-      await client.query('INSERT INTO users (name, role) VALUES ($1, $2);', [user.name, user.role]);
-
+      await client.query('INSERT INTO users (name, role, email, password) VALUES ($1, $2, $3, $4);', [user.name, user.role, user.email, user.password]);
+      const result: QueryResult = await client.query('SELECT * FROM users ORDER BY id DESC LIMIT 1;');
+      return this._parseUsersFromQueryResult(result)[0];
     } finally {
       client.release();
     }
@@ -50,7 +51,7 @@ export class UsersRepository {
     const client = await this.pool.connect();
 
     try {
-      await client.query('UPDATE users SET name = $2, role = $3 WHERE id = $1;', [userId, user.name, user.role]);
+      await client.query('UPDATE users SET name = $2, role = $3, email = $4, password = $5 WHERE id = $1;', [userId, user.name, user.role, user.email, user.password]);
 
     } finally {
       client.release();
@@ -69,12 +70,14 @@ export class UsersRepository {
 
   _parseUsersFromQueryResult(queryResult: QueryResult): User[] {
     return queryResult.rows.map((row) => {
-      const { id, name, role } = row;
+      const { id, name, role, email, password } = row;
   
       return {
         id,
         name,
         role: role as UserRole,
+        email,
+        password
       };
     });
   }
