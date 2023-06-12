@@ -50,7 +50,7 @@ describe('TransactionsController', () => {
 
       const result = await transactionsController.get(accountId);
 
-      expect(mockTransactionsRepository.getAllTransactions).toHaveBeenCalledWith(accountId);
+      expect(mockTransactionsRepository.getAllTransactions).toHaveBeenCalledWith(accountId, 0, 10);
       expect(result).toEqual(transactions);
     });
   });

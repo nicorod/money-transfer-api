@@ -32,7 +32,7 @@ describe('TransactionsRepository', () => {
         release: jest.fn(),
       }));
 
-      const result = await transactionsRepository.getAllTransactions(1);
+      const result = await transactionsRepository.getAllTransactions(1, 0, 10);
 
       expect(result).toEqual([
         { id: 1, fromAccountId: 1, toAccountId: 2, amount: 100 },
@@ -51,14 +51,13 @@ describe('TransactionsRepository', () => {
         release: jest.fn(),
       };
 
-      // Mock the pool's `connect` method to return the mock client
       (mockPool.connect as jest.Mock).mockResolvedValueOnce(mockClient);
 
       await transactionsRepository.saveTransaction(transaction, newBalance, newBalance2);
 
       expect(mockPool.connect).toHaveBeenCalled();
       expect(mockClient.query).toHaveBeenNthCalledWith(1, "BEGIN");
-      expect(mockClient.query).toHaveBeenNthCalledWith(2, "INSERT INTO Transactions (\"fromAccountId\", \"toAccountId\", amount) VALUES ($1, $2, $3);", [transaction.fromAccountId, transaction.toAccountId, transaction.amount]);
+      expect(mockClient.query).toHaveBeenNthCalledWith(2, 'INSERT INTO Transactions ("fromAccountId", "toAccountId", amount, time) VALUES ($1, $2, $3, $4);', [transaction.fromAccountId, transaction.toAccountId, transaction.amount, Date.now]);
       expect(mockClient.query).toHaveBeenNthCalledWith(3, "UPDATE accounts SET balance = $2 WHERE id = $1;", [transaction.fromAccountId, newBalance]);
       expect(mockClient.query).toHaveBeenNthCalledWith(4, "UPDATE accounts SET balance = $2 WHERE id = $1;", [transaction.toAccountId, newBalance2]);
       expect(mockClient.query).toHaveBeenNthCalledWith(5, "COMMIT");
@@ -74,14 +73,10 @@ describe('TransactionsRepository', () => {
         release: jest.fn(),
       };
 
-      // Mock the pool's `connect` method to return the mock client
       (mockPool.connect as jest.Mock).mockResolvedValueOnce(mockClient);
-
-      // Mock an error in the query
       (mockClient.query as jest.Mock).mockRejectedValueOnce(new Error("Query error"));
 
       await expect(transactionsRepository.saveTransaction(transaction, newBalance, newBalance2)).rejects.toThrow(Error);
-
       expect(mockPool.connect).toHaveBeenCalled();
       expect(mockClient.query).toHaveBeenNthCalledWith(1, "BEGIN");
       expect(mockClient.query).toHaveBeenNthCalledWith(2, "ROLLBACK");

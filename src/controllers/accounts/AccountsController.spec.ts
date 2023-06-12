@@ -3,10 +3,13 @@ import { AccountsRepository } from '../../repositories/accounts';
 import { NotFound } from '@tsed/exceptions';
 import { Account, AccountType } from '../../dto/Account';
 import { UsersRepository } from '../../repositories/users';
+import { TransactionsRepository } from '../../repositories/transactions';
+import { Transaction } from '../../dto/Transaction';
 
 describe('AccountsController', () => {
   let mockAccountsRepository: Partial<AccountsRepository>;
   let mockUsersRepository: Partial<UsersRepository>;
+  let mockTransactionsRepository: Partial<TransactionsRepository>;
   let accountsController: AccountsController;
 
   beforeEach(() => {
@@ -22,7 +25,14 @@ describe('AccountsController', () => {
       getUser: jest.fn(),
     };
 
-    accountsController = new AccountsController(mockAccountsRepository as AccountsRepository, mockUsersRepository as UsersRepository);
+    mockTransactionsRepository = {
+      getAllTransactions: jest.fn(),
+    };
+
+    accountsController = new AccountsController(
+      mockAccountsRepository as AccountsRepository, 
+      mockUsersRepository as UsersRepository, 
+      mockTransactionsRepository as TransactionsRepository);
   });
 
   afterEach(() => {
@@ -138,7 +148,7 @@ describe('AccountsController', () => {
   
       expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
       expect(mockAccountsRepository.modifyAccount).toHaveBeenCalledWith(existingAccount);
-      expect(existingAccount.balance).toBeCloseTo(1000 + (1000 * 0.05) / 12, 2); // Assuming monthly interest calculation
+      expect(existingAccount.balance).toBeCloseTo(1000 + (1000 * 0.05) / 12, 2);
     });
   
     it("should throw an error for non-BasicSavings accounts", async () => {
@@ -168,6 +178,72 @@ describe('AccountsController', () => {
   
       expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
       expect(mockAccountsRepository.saveAccount).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getAccountStatement", () => {
+    it("should retrieve the account statement with transaction history and interest earned for a BasicSavings account", async () => {
+      const accountId = 1;
+      const existingAccount: Account = {
+        id: accountId,
+        accountType: AccountType.BASIC_SAVINGS,
+        balance: 1000,
+        userId: 1,
+        isActive: true,
+      };
+      const transactions: Transaction[] = [
+        { id: 1, fromAccountId: accountId, toAccountId: 2, amount: 100 },
+        { id: 2, fromAccountId: accountId, toAccountId: 3, amount: 200 },
+      ];
+  
+      jest.spyOn(mockAccountsRepository, "getAccount").mockResolvedValueOnce(existingAccount);
+      jest.spyOn(mockTransactionsRepository, "getAllTransactions").mockResolvedValueOnce(transactions);
+      const interestEarned = accountsController.calculateInterestEarned(existingAccount);
+  
+      const accountStatement = await accountsController.getAccountStatement(accountId);
+  
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockTransactionsRepository.getAllTransactions).toHaveBeenCalledWith(accountId, 0, 10);
+      expect(accountStatement.account).toBe(existingAccount);
+      expect(accountStatement.transactions).toBe(transactions);
+      expect(accountStatement.interestEarned).toBe(interestEarned);
+    });
+  
+    it("should retrieve the account statement with transaction history and zero interest earned for a non-BasicSavings account", async () => {
+      const accountId = 1;
+      const existingAccount: Account = {
+        id: accountId,
+        accountType: AccountType.CURRENT,
+        balance: 1000,
+        userId: 1,
+        isActive: true,
+      };
+      const transactions: Transaction[] = [
+        { id: 1, fromAccountId: accountId, toAccountId: 2, amount: 100 },
+        { id: 2, fromAccountId: accountId, toAccountId: 3, amount: 200 },
+      ];
+  
+      jest.spyOn(mockAccountsRepository, "getAccount").mockResolvedValueOnce(existingAccount);
+      jest.spyOn(mockTransactionsRepository, "getAllTransactions").mockResolvedValueOnce(transactions);
+  
+      const accountStatement = await accountsController.getAccountStatement(accountId);
+  
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockTransactionsRepository.getAllTransactions).toHaveBeenCalledWith(accountId, 0, 10);
+      expect(accountStatement.account).toBe(existingAccount);
+      expect(accountStatement.transactions).toBe(transactions);
+      expect(accountStatement.interestEarned).toBe(0);
+    });
+  
+    it("should throw an error for a non-existent account", async () => {
+      const accountId = 1;
+  
+      jest.spyOn(mockAccountsRepository, "getAccount").mockResolvedValueOnce(undefined);
+  
+      await expect(accountsController.getAccountStatement(accountId)).rejects.toThrowError("Account not found");
+  
+      expect(mockAccountsRepository.getAccount).toHaveBeenCalledWith(accountId);
+      expect(mockTransactionsRepository.getAllTransactions).not.toHaveBeenCalled();
     });
   });
   

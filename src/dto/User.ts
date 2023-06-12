@@ -1,4 +1,3 @@
-import { Account } from "./Account";
 
 enum UserRole {
     USER = 'USER',

@@ -1,4 +1,4 @@
-import { BodyParams, PathParams } from "@tsed/common";
+import { BodyParams, PathParams, QueryParams } from "@tsed/common";
 import { Controller } from "@tsed/di";
 import { Get, Post } from "@tsed/schema";
 import { AccountsRepository } from "../../repositories/accounts";
@@ -18,8 +18,9 @@ export class TransactionsController {
   }
 
   @Get("/accounts/:accountId")
-  async get(@PathParams('accountId') accountId: number): Promise<Transaction[]> {
-    return await this.transactionsRepository.getAllTransactions(accountId);
+  async get(@PathParams('accountId') accountId: number, @QueryParams("page") page: number = 1, @QueryParams("pageSize") pageSize: number = 10): Promise<Transaction[]> {
+    const offset = (page - 1) * pageSize;
+    return await this.transactionsRepository.getAllTransactions(accountId, offset, pageSize);
   }
 
   @Post('/accounts/:accountId')
@@ -30,7 +31,7 @@ export class TransactionsController {
       throw Error("Invalid transaction: origin and destination are the same account")
     if (newTransaction.amount <= 0)
       throw Error("Invalid transaction: amount must be a number greater than 0")
-    
+
     const toAccount = await this.accountsRepository.getAccount(newTransaction.toAccountId);
     const fromAccount = await this.accountsRepository.getAccount(accountId);
 
@@ -39,7 +40,7 @@ export class TransactionsController {
     if (!toAccount)
       throw Error("Destination account not found")
 
-    if(userAccounts.includes(toAccount))
+    if (userAccounts.includes(toAccount))
       throw Error("Invalid transaction: Transfer between accounts belonging to the same user is not allowed")
 
     if (newTransaction.amount > fromAccount!.balance)

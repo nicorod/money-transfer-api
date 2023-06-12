@@ -1,20 +1,23 @@
-import { BodyParams, PathParams } from "@tsed/common";
+import { BodyParams, PathParams, QueryParams } from "@tsed/common";
 import { Controller } from "@tsed/di";
 import { NotFound } from "@tsed/exceptions";
 import { Delete, Get, Post, Put } from "@tsed/schema";
 import { UsersRepository } from "../../repositories/users";
-import { Account, AccountType } from "../../dto/Account";
+import { Account, AccountStatement, AccountType } from "../../dto/Account";
 import { AccountsRepository } from "../../repositories/accounts";
+import { TransactionsRepository } from "../../repositories/transactions";
 
 @Controller("/")
 export class AccountsController {
 
   private accountsRepository: AccountsRepository;
   private usersRepository: UsersRepository;
+  private transactionsRepository: TransactionsRepository;
 
-  constructor(accountsRepository: AccountsRepository, usersRepository: UsersRepository) {
+  constructor(accountsRepository: AccountsRepository, usersRepository: UsersRepository, transactionsRepository: TransactionsRepository) {
     this.accountsRepository = accountsRepository;
     this.usersRepository = usersRepository;
+    this.transactionsRepository = transactionsRepository;
   }
 
   @Get("/users/:userId")
@@ -75,5 +78,37 @@ export class AccountsController {
     existingAccount.balance += monthlyInterest;
 
     await this.accountsRepository.modifyAccount(existingAccount);
+  }
+
+  @Get("/:accountId/statement")
+  async getAccountStatement(@PathParams("accountId") accountId: number, @QueryParams("page") page: number = 1, @QueryParams("pageSize") pageSize: number = 10): Promise<AccountStatement> {
+    const offset = (page - 1) * pageSize;
+    const existingAccount = await this.accountsRepository.getAccount(accountId);
+
+    if (!existingAccount) {
+      throw new NotFound("Account not found");
+    }
+
+    const transactions = await this.transactionsRepository.getAllTransactions(accountId, offset, pageSize);
+    const interestEarned = this.calculateInterestEarned(existingAccount);
+
+    const accountStatement: AccountStatement = {
+      account: existingAccount,
+      transactions,
+      interestEarned,
+    };
+
+    return accountStatement;
+  }
+
+  public calculateInterestEarned(account: Account): number {
+    if (account.accountType !== AccountType.BASIC_SAVINGS) {
+      return 0;
+    }
+
+    const interestRate = 0.05;
+    const monthlyInterest = (account.balance * interestRate) / 12;
+
+    return monthlyInterest;
   }
 }

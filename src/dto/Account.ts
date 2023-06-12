@@ -1,9 +1,15 @@
-import { User } from "./User";
+import { Transaction } from "./Transaction";
 
 enum AccountType {
     SAVINGS = 'SAVINGS',
     CURRENT = 'CURRENT',
     BASIC_SAVINGS = 'BASIC_SAVINGS'
+}
+
+interface AccountStatement {
+    account: Account;
+    transactions: Transaction[],
+    interestEarned: number,
 }
 
 interface Account {
@@ -14,4 +20,4 @@ interface Account {
     isActive: boolean;
 }
 
-export { Account, AccountType };
+export { Account, AccountType, AccountStatement };
